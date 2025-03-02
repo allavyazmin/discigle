@@ -11,8 +11,9 @@ intents.dm_messages = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-queue = []  
-active_chats = {}  
+queue = []
+active_chats = {}
+reveal_requests = {}   
 
 
 @bot.event
@@ -22,8 +23,7 @@ async def on_ready():
 
 @bot.command()
 async def find(ctx):
-    """User enters the queue to find a chat partner."""
-    if isinstance(ctx.channel, discord.DMChannel):  
+    if isinstance(ctx.channel, discord.DMChannel):
         user = ctx.author
         if user in active_chats:
             await user.send("You're already in a chat! Type `!stop` or `!next` to leave.")
@@ -34,7 +34,7 @@ async def find(ctx):
             return
 
         queue.append(user)
-        await user.send("Searching for a partner...")
+        await user.send("Searching for a stranger...")
 
         if len(queue) >= 2:
             user1 = queue.pop(0)
@@ -51,14 +51,13 @@ async def stop(ctx):
     if isinstance(ctx.channel, discord.DMChannel):
         user = ctx.author
         if user in active_chats:
-            partner = active_chats.pop(user, None)
+            stranger = active_chats.pop(user, None)
 
-            # If the partner exists, remove their connection too
-            if partner and partner in active_chats:
-                active_chats.pop(partner, None)
-                await partner.send("Your chat partner has left. Type `!find` to find a new partner.")
+            if stranger and stranger in active_chats:
+                active_chats.pop(stranger, None)
+                await stranger.send("Your chat stranger has left. Type `!find` to find a new stranger.")
 
-            await user.send("Chat ended. Type `!find` to find a new partner.")
+            await user.send("Chat ended. Type `!find` to find a new stranger.")
         else:
             await user.send("You're not in a chat!")
 
@@ -68,19 +67,16 @@ async def next(ctx):
     if isinstance(ctx.channel, discord.DMChannel):
         user = ctx.author
         if user in active_chats:
-            partner = active_chats.pop(user, None)
+            stranger = active_chats.pop(user, None)
 
-            # If the partner exists, remove their connection too
-            if partner and partner in active_chats:
-                active_chats.pop(partner, None)
-                await partner.send("Your chat partner skipped. Type `!find` to find a new partner.")
+            if stranger and stranger in active_chats:
+                active_chats.pop(stranger, None)
+                await stranger.send("Your chat stranger skipped. Type `!find` to find a new stranger.")
 
-            await user.send("You skipped the chat. Finding a new partner...")
+            await user.send("You skipped the chat. Finding a new stranger...")
 
-            # Add the user back to the queue
             queue.append(user)
 
-            # Try to match with a new partner
             if len(queue) >= 2:
                 user1 = queue.pop(0)
                 user2 = queue.pop(0)
@@ -93,15 +89,37 @@ async def next(ctx):
             await user.send("You're not in a chat. Type `!find` to start!")
 
 
+@bot.command()
+async def reveal(ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        user = ctx.author
+        if user in active_chats:
+            stranger = active_chats[user]
+            reveal_requests[user] = True
+            
+            if stranger in reveal_requests:
+                await user.send(f"Your chat stranger's Discord: {stranger.name}#{stranger.discriminator}")
+                await stranger.send(f"Your chat stranger's Discord: {user.name}#{user.discriminator}")
+                
+                reveal_requests.pop(user, None)
+                reveal_requests.pop(stranger, None)
+            else:
+                await user.send("Reveal request sent! Waiting for your stranger to type `!reveal` as well.")
+        else:
+            await user.send("You're not in a chat! Type `!find` to start.")
+
+
 @bot.event
 async def on_message(message):
     if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
         user = message.author
         if user in active_chats:
-            partner = active_chats[user]
-            await partner.send(f"Stranger: {message.content}")
+            stranger = active_chats[user]
+            embed = discord.Embed(title="New Message", description=message.content, color=discord.Color.blue())
+            embed.set_footer(text="Stranger")
+            await stranger.send(embed=embed)
         elif message.content.startswith("!"):
-            await bot.process_commands(message)  # Allow commands
+            await bot.process_commands(message) 
         else:
             await user.send("You're not in a chat. Type `!find` to start!")
 
