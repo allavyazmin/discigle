@@ -11,8 +11,8 @@ intents.dm_messages = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-queue = []  # Users waiting for a chat
-active_chats = {}  # Active chat pairs (user -> partner)
+queue = []  
+active_chats = {}  
 
 
 @bot.event
@@ -23,7 +23,7 @@ async def on_ready():
 @bot.command()
 async def find(ctx):
     """User enters the queue to find a chat partner."""
-    if isinstance(ctx.channel, discord.DMChannel):  # Ensure it's in DMs
+    if isinstance(ctx.channel, discord.DMChannel):  
         user = ctx.author
         if user in active_chats:
             await user.send("You're already in a chat! Type `!stop` or `!next` to leave.")
@@ -36,7 +36,6 @@ async def find(ctx):
         queue.append(user)
         await user.send("Searching for a partner...")
 
-        # If another user is in the queue, pair them
         if len(queue) >= 2:
             user1 = queue.pop(0)
             user2 = queue.pop(0)
@@ -49,7 +48,6 @@ async def find(ctx):
 
 @bot.command()
 async def stop(ctx):
-    """Allows users to leave the chat properly."""
     if isinstance(ctx.channel, discord.DMChannel):
         user = ctx.author
         if user in active_chats:
@@ -67,7 +65,6 @@ async def stop(ctx):
 
 @bot.command()
 async def next(ctx):
-    """Allows users to leave the current chat and find a new partner immediately."""
     if isinstance(ctx.channel, discord.DMChannel):
         user = ctx.author
         if user in active_chats:
@@ -98,7 +95,6 @@ async def next(ctx):
 
 @bot.event
 async def on_message(message):
-    """Forward messages between paired users."""
     if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
         user = message.author
         if user in active_chats:
