@@ -20,6 +20,12 @@ reveal_requests = {}
 async def on_ready():
     print(f"Bot is ready! Logged in as {bot.user}")
 
+@bot.event
+async def on_member_join(member):
+    try:
+        await member.send("Thank you for using our bot! Type `!find` to start chatting.")
+    except discord.Forbidden:
+        print(f"Could not send a message to {member}")
 
 @bot.command()
 async def find(ctx):
